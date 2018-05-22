@@ -31,19 +31,146 @@
     <todo-item v-for="item in groceryList" v-bind:todo="item.text" v-bind:key="item.id"></todo-item>
   </ol>
   <hr>
+  <span :title="review">{{review}}</span>
+  <hr>
+  <button @click="reviewMessage">{{review}}</button>
+  <hr>
+  <input type="text" :value="reservedMessage"><br>
+  <input type="text" :value="nextMessage">
+  <hr>
+  <input type="text" @keyup.enter.delete.tab.up.down.left.right="alertKeyCode($event)" placeholder="请输入按键"><br>
+  <input type="text" @keyup.alt.67="alertKeyCode($event)" placeholder="请输入按键Alt+C"><br>
+  <button @click.ctrl="alertKeyCode($event)">A</button>
+  <hr>
+  <input v-model.lazy="msg" placeholder='在“change”时而非“input”时更新'><br>
+  <input v-model="msg" placeholder='在“input”时而非“change”时更新'><br>
+  {{msg}}
+  <hr>
+  <input v-model.number="age" type="number" placeholder="数字">{{age}}
+  <hr>
+  <input v-model="trimMessage" placeholder="不过滤首尾空白字符"><br>
+  <input v-model.trim="trimMessage" placeholder="过滤首尾空白字符"><br>
+  |{{trimMessage}}|
+  <hr>
+  <button-counter></button-counter>
+  <button-counter></button-counter>
+  <button-counter></button-counter>
+  <hr>
+  <input type="text" v-model="custInput" placeholder="原生Input">
+  <custom-input v-model="custInput" placeholder="自定义Input"></custom-input>
+  <hr>
+  <alert-box>aaa</alert-box>
+  <hr>
+  动态组件:
+  <select v-model="curComponentName">
+    <option value="">选择组件名称</option>
+    <option value="button-counter">button-counter</option>
+    <option value="alert-box">alert-box</option>
+  </select>
+  <br>
+  <component :is="curComponentName"></component>
+  <hr>
+  <input v-model="custValue">
+  组件属性验证:<message-box :cust-value="custValue"></message-box>
+  <hr>
+  非Props属性:<alert-box data-tell="ttaa">ttt</alert-box>
+  <hr>
+  <base-input label="将原生事件绑定到组件" type="text" v-model="baseInputValue" @input="msg=baseInputValue"></base-input>{{msg}}
+  <hr>
 </div>
 <!-- built files will be auto injected -->
 </body>
 <script>
+  Vue.component('base-input', {
+    inheritAttrs : false,
+    props : ['label', 'value'],
+    computed : {
+      inputListeners : function () {
+        var vm = this;
+        return Object.assign({}, this.$listeners, {
+          input : function (evt) {
+            vm.$emit('input', evt.target.value);
+          }
+        })
+      }
+    },
+    template : '\
+      <label>\
+        {{label}}\
+        <input v-bind="$attrs" v-on="inputListeners" :value="value">\
+      </label>\
+    '
+  });
   Vue.component('todo-item', {
     props: ['todo'],
     template: '<li>{{todo}}</li>'
   });
+  // 定义一个名为 button-counter 的新组件
+  Vue.component('button-counter', {
+    data: function () {
+      return {
+        count: 0
+      }
+    },
+    // data: {
+    //   count : 0
+    // },
+    template: '<button v-on:click="count++">You clicked me {{ count }} times.</button>'
+  });
+  Vue.component('custom-input', {
+    props: ['value', 'placeholder'],
+    template: ' \
+                <input  \
+                  v-bind:value="value" \
+                   v-on:input="$emit(\'input\', $event.target.value)" \
+                  :placeholder="placeholder" \
+                > \
+              '
+  });
+  Vue.component('alert-box', {
+    template: '\
+    <div class="demo-alert-box">\
+      <strong>Error!</strong>\
+      <slot/>\
+    </div>\
+  '
+  });
+  Vue.component('message-box', {
+      props : {
+        stringValue : {
+          type : String,
+          required : false,
+          default : ""
+        },
+        numberValue : {
+          type : Number,
+          required : false
+        },
+        custValue : {
+          validator : function (val) {
+            return (!val) || (['success', 'warning', 'danger'].indexOf(val) !== -1);
+          }
+        }
+      },
+      template : '\
+      <input type="text" :value=\'stringValue || numberValue || custValue\'>\
+      '
+    }
+  );
   new Vue({
     el: '#app',
     data: {
+      baseInputValue : '',
+      custValue : '',
+      curComponentName: '',
+      trimMessage: null,
+      age: null,
+      msg: '',
       message: 'Hello Vue!',
+      nextMessage: '',
+      review: '缩写',
       seen: true,
+      custInput: '',
       todos: [
         {text: '学习 JavaScript'},
         {text: '学习 Vue'},
@@ -55,12 +182,31 @@
         {id: 2, text: '随便其它什么人吃的东西'}
       ]
     },
+    computed: {
+      reservedMessage: function () {
+        return this.message.split('').reverse().join('');
+      },
+      reservedMessage2: {
+        get: function () {
+          return this.reservedMessage;
+        },
+        set: function (newVal) {
+          this.nextMessage = newVal.toUpperCase();
+        }
+      },
+    },
     methods: {
       reverseMessage: function () {
         this.message = this.message.split('').reverse().join('')
-      }
+      },
+      reviewMessage: function () {
+        alert('这是缩写的事件');
+      },
+      alertKeyCode: function (evt) {
+        alert(evt.keyCode);
+      },
     },
-    created : function () {
+    created: function () {
       console.log('---- message is : ' + this.message);
     },
   });
